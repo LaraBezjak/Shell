@@ -6,13 +6,13 @@
 #SBATCH --mem-per-cpu=200M
 #SBATCH --time=24:00:00
 
-source ~/miniconda3/etc/profile.d/conda.sh
+source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
 conda activate cge_env
 
 input_dir=$1
-ref=$2
+output_dir=$2
+ref=$output_dir/ref/*ref.fasta
 
-output_file=$input_dir/"alignment_summary.txt"
 bwa index $ref
 samtools faidx $ref
 
@@ -21,7 +21,7 @@ for file in "$input_dir"/*fasta; do
 		wait -n
 	done
   ime=$(basename "$file" .fasta)
-  srun --ntasks=1 --cpus-per-task=10 bwa mem "$ref" "$file" > $input_dir/${ime}.sam &
+  srun --ntasks=1 --cpus-per-task=10 bwa mem $ref $file > $input_dir/${ime}.sam &
 done
 wait
 
@@ -35,10 +35,10 @@ done
 
 reference_length=$(awk '{print $2}' $(ls "$input_dir"/*cov_stat.txt | head -n 1) | sort -n | tail -n 1)
 
+output_file=$output_dir/ref/"alignment_summary.txt"
 echo -e "Sample\tAligned_Length\t%\tStd" > "$output_file"
 for file in "$input_dir"/*cov_stat.txt; do
     sample=$(basename "$file" _cov_stat.txt)
-    #unique_positions=$(awk '$3 > 0 {print $2}' "$file" | sort -u)
     aligned_length=$(awk '$3 > 0 {count++} END {print count}' "$file")
     std=$(awk '{sum+=$3; sumsq+=$3*$3} END {print sqrt(sumsq/NR - (sum/NR)**2)}' "$file")
     percentage_aligned=$(awk -v aligned="$aligned_length" -v ref="$reference_length" 'BEGIN {printf "%.4f", (aligned / ref) * 100}')
@@ -59,5 +59,5 @@ echo -e "Total Reference Length:\t$reference_length" >> "$output_file"
 echo -e "Positions Aligned in All Samples:\t$shared_count" >> "$output_file"
 echo -e "Percentage of All-Aligned Positions:\t$percentage%" >> "$output_file"
 
-rm $input_dir/*.sam $input_dir/*.bam $input_dir/*cov_stat.txt $input_dir/shared_positions.txt
+rm $input_dir/*.sam $input_dir/*.bam $input_dir/*.txt
 conda deactivate

@@ -3,15 +3,15 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=10
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem-per-cpu=5G
 #SBATCH --time=24:00:00
 
 start_time=$(date +%s)
-source ~/miniconda3/etc/profile.d/conda.sh
+source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
 conda activate cge_env
 
-INPUT="/home/storage/finished_projects/LaraB/rezultati/AMR_plazmidi/iskani_plazmidi/AF515" #$1
-OUTPUT="/home/storage/finished_projects/LaraB/rezultati/AMR_plazmidi/iskani_plazmidi/AF515/rezultati" #$2
+INPUT=$1
+OUTPUT=$2
 mkdir -p $OUTPUT/ref
 
 for file in $INPUT/*fasta; do
@@ -19,7 +19,7 @@ for file in $INPUT/*fasta; do
 		wait -n
 	done
   SAMPLE=$(basename $file .fasta)
-  srun --ntasks=1 --cpus-per-task=10 blastn -num_threads 10 -query $file -db nt -outfmt 7 -out $OUTPUT/ref/${SAMPLE}.tsv -perc_identity 90 -max_target_seqs 5 &
+  srun --ntasks=1 --cpus-per-task=10 blastn -num_threads 10 -query $file -db nt -outfmt "7 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen" -out $OUTPUT/ref/${SAMPLE}.tsv -perc_identity 90 -max_target_seqs 5 &
 done
 wait
 
@@ -43,11 +43,11 @@ done
 most_common=$(awk -F'\t' '{print $2}' "$temp_file" | sort | uniq -c | sort -nr | head -n 1 | awk '{print $2}')
 if [ -z "$most_common" ]; then
   echo "Referenca ni bila najdena."
-  #rm -rf $OUTPUT/ref/*tsv
+  rm -rf $OUTPUT/ref/*tsv
 else
   echo "Najpogostejsa referenca: $most_common"
-  #efetch -db nucleotide -id $most_common -format fasta > $OUTPUT/${most_common}_ref.fasta
-  #rm -rf $OUTPUT/ref
+  efetch -db nucleotide -id $most_common -format fasta > $OUTPUT/ref/${most_common}_ref.fasta
+  rm -rf $OUTPUT/ref/*tsv
 fi
 
 conda deactivate

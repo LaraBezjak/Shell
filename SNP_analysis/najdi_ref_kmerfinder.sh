@@ -7,11 +7,11 @@
 #SBATCH --time=48:00:00
 
 start_time=$(date +%s)
-source ~/miniconda3/etc/profile.d/conda.sh
+source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
 conda activate cge_env
 
-INPUT="" #$1
-OUTPUT="" #$2
+INPUT=$1
+OUTPUT=$2
 
 for file in $INPUT/*fasta; do
   while [ "$(jobs -p | wc -l)" -ge "$SLURM_NTASKS" ]; do
@@ -31,12 +31,12 @@ done
 most_common=$(sort "$temp_file" | uniq -c | sort -nr | head -n 1 | awk '{print $2}')
 id=${most_common#NZ_}
 if [ -z "$id" ]; then
-  echo "Referenca ni bila najdena."
-  #rm -rf $OUTPUT/ref/AMR*
+  echo "Referenca ni bila najdena. Preglej $OUTPUT/ref/temp.txt"
+  find "$OUTPUT/ref/" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 else
   echo "Najpogostejsa referenca: $most_common"
-  efetch -db nucleotide -id $id -format fasta > $OUTPUT/${id}_ref.fasta
-  rm -rf $OUTPUT/ref
+  efetch -db nucleotide -id $id -format fasta > $OUTPUT/ref/${id}_ref.fasta
+  find "$OUTPUT/ref/" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 fi
 
 conda deactivate
