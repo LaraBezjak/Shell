@@ -2,5 +2,5 @@ SNP_analysis_fasta.sh for fasta files only. Reads coverage.sh, najdi_ref_blast.s
 
 Conda enviroments:
 - snp_env (snippy, gubbins)
-- cge_env (kmerfinder, CSIPhylogeny)
+- cge_env (blastn, kmerfinder, CSIPhylogeny)
 
