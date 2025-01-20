@@ -3,10 +3,10 @@ set -e
 user="larbez1@nlzoh.si"
 start_time=$(date +%s)
 #################################### PATHS #######################################################
-REF_KMER="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/najdi_ref_kmerfinder.sh"
-REF_BLASTN="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/najdi_ref_blast.sh"
-COV="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/coverage.sh"
-SNP="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/snp.sh"
+REF_KMER="najdi_ref_kmerfinder.sh"
+REF_BLASTN="najdi_ref_blast.sh"
+COV="coverage.sh"
+SNP="snp.sh"
 #################################### ARGUMENTS ###################################################
 FILTER=False  # Default value for FILTER
 while getopts "i:o:r:l:f:h" opt; do
