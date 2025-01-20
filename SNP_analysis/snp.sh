@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem-per-cpu=200M
 #SBATCH --time=48:00:00
+#SBATCH --output=snp_%j.out
 
 start_time=$(date +%s)
 source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
@@ -42,7 +43,7 @@ rm $OUTPUT_DIR/snippy/core_no_ref.full.aln
 
 echo "Gubbins"
 cd $OUTPUT_DIR/gubbins/
-run_gubbins.py --prefix gubb $OUTPUT_DIR/snippy/clean.full.aln
+srun --ntasks=1 --cpus-per-task=10 run_gubbins.py -c 10 --prefix gubb $OUTPUT_DIR/snippy/clean.full.aln
 wait
 snp-sites -c -o $OUTPUT_DIR/gubbins/${NAME}_clean.core.fasta $OUTPUT_DIR/gubbins/gubb.filtered_polymorphic_sites.fasta
 

@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem-per-cpu=200M
 #SBATCH --time=24:00:00
+#SBATCH --output=aln_%j.out
 
 source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
 conda activate cge_env

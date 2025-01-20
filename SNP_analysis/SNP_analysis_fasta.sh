@@ -1,8 +1,12 @@
 #!/bin/bash
 set -e
 user="larbez1@nlzoh.si"
-
 start_time=$(date +%s)
+#################################### PATHS #######################################################
+REF_KMER="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/najdi_ref_kmerfinder.sh"
+REF_BLASTN="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/najdi_ref_blast.sh"
+COV="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/coverage.sh"
+SNP="/home/storage/finished_projects/LaraB/skripte/SNP/SNPfasta/snp.sh"
 #################################### ARGUMENTS ###################################################
 FILTER=False  # Default value for FILTER
 while getopts "i:o:r:l:f:h" opt; do
@@ -33,7 +37,7 @@ done
 if [ -z "${INPUT_DIR}" ]; then
   if [ -z "${LIST}" ]; then
     echo -e "\nError: Missing input directory (-i) or file list (-list).\n"
-    "/home/storage/finished_projects/LaraB/skripte/SNP/SNP_analiza_genome_fasta.sh" -h
+    "/home/storage/finished_projects/LaraB/skripte/SNP/SNP_analysis_fasta.sh" -h
     echo -e "\n"
     exit 1
   fi
@@ -43,7 +47,7 @@ fi
 
 if [ -z "${OUTPUT_DIR}" ]; then
   CURRENT_DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-  OUTPUT_DIR="./Results_${CURRENT_DATE}"
+  OUTPUT_DIR="./SNP_results_${CURRENT_DATE}"
 fi
 mkdir -p "${OUTPUT_DIR}"
 echo "Output: $OUTPUT_DIR"
@@ -66,7 +70,6 @@ if [ -n "${LIST}" ]; then
   INPUT_DIR=$TARGET_DIR
   echo "Input is in new dir: $TARGET_DIR"
 fi
-
 #################################### FUNCTIONS ###################################################
 # Function to wait for job completion
 wait_for_job() {
@@ -80,7 +83,7 @@ wait_for_job() {
 # Function to filter files
 filter_files() {
   local input_file=$1
-  local threshold=80.0000 
+  local threshold=80.0000
   local dir_remove=$2
   
   while IFS=$'\t' read -r sample aligned_length percent std; do
@@ -96,9 +99,9 @@ filter_files() {
     fi
   done < "$input_file"
 }
-
 #################################### SNP ANALYSIS #################################################
 ########## JOB 1: REF
+echo -e "\n1: FINDING REFERENCE"
 job_name="ref"
 REF_DIR="${OUTPUT_DIR}/ref"
 mkdir -p "${REF_DIR}"
@@ -116,9 +119,9 @@ else
   first_file=$(find "${INPUT_DIR}" -type f -name "*.fasta" | head -n 1)
   file_size=$(stat --format="%s" "${first_file}")
   if (( file_size > 1000000 )); then
-    sbatch /home/storage/finished_projects/LaraB/skripte/SNP/najdi_ref_kmerfinder.sh "${INPUT_DIR}" "${OUTPUT_DIR}"
+    sbatch $REF_KMER "${INPUT_DIR}" "${OUTPUT_DIR}"
   else
-    sbatch /home/storage/finished_projects/LaraB/skripte/SNP/najdi_ref_blast.sh "${INPUT_DIR}" "${OUTPUT_DIR}"
+    sbatch $REF_BLASTN "${INPUT_DIR}" "${OUTPUT_DIR}"
   fi
   wait_for_job "${job_name}" "$user"
   wait
@@ -129,11 +132,12 @@ else
 fi
 
 ########## JOB 2: ALIGNMENT TO REF
+echo -e "\n2: GENOME COVERAGE"
 job_name2="aln"
 alignment_summary="${REF_DIR}/alignment_summary.txt"
 
 if [ ! -f "${alignment_summary}" ]; then
-  sbatch /home/storage/finished_projects/LaraB/skripte/SNP/coverage.sh "${INPUT_DIR}" "${OUTPUT_DIR}"
+  sbatch $COV "${INPUT_DIR}" "${OUTPUT_DIR}"
   wait_for_job "${job_name2}" "$user"
 fi
 
@@ -143,18 +147,19 @@ if [ -f "$alignment_summary" ] && [ "$FILTER" = "True" ]; then
 fi
 
 ########## JOB 3: SNP
+echo -e "\n3: SNP ANALYSIS"
 job_name3="snp"
 if ls "${INPUT_DIR}"/*.fasta &>/dev/null; then
-  sbatch /home/storage/finished_projects/LaraB/skripte/SNP/snp.sh "${INPUT_DIR}" "${OUTPUT_DIR}"
+  sbatch $SNP "${INPUT_DIR}" "${OUTPUT_DIR}"
   wait_for_job "${job_name3}" "$user"
 else
-  echo -e "\nError: All files have alignment below 80%. Analysis stopped. \nCheck file for another reference: ${REF_DIR}/ref/temp.txt \nand folder: $INPUT_DIR"
+  echo -e "\nError: All files have alignment below 80%. Analysis canceled. \nCheck file for another reference: $REF_DIR/temp_refs.txt \nand folder: $INPUT_DIR"
   exit 1
 fi
 
 if [ -f $OUTPUT_DIR/gubbins/*clean.core.fasta ]; then
   cp $OUTPUT_DIR/gubbins/*clean.core.fasta $OUTPUT_DIR/.
-  echo -e "\nSNP analysis completed.\nCore SNP alignment saved in $OUTPUT_DIR/*clean.core.fasta"
+  echo -e "\nSNP analysis completed.\nCore SNP alignment is saved in $OUTPUT_DIR/*clean.core.fasta"
   if [ -f $OUTPUT_DIR/gubbins/filtered_out.txt ]; then
     echo -e "\nGubbins removed files with more than 25% missing sequences. List saved in $OUTPUT_DIR/gubbins/filtered_out.txt."
   fi

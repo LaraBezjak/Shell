@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem-per-cpu=5G
 #SBATCH --time=24:00:00
+#SBATCH --output=ref_%j.out
 
 start_time=$(date +%s)
 source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
@@ -23,7 +24,7 @@ for file in $INPUT/*fasta; do
 done
 wait
 
-temp_file=$OUTPUT/ref/temp.txt
+temp_file=$OUTPUT/ref/temp_refs.txt
 for file in $OUTPUT/ref/*.tsv; do
   awk -F'\t' '
   !/^#/ {

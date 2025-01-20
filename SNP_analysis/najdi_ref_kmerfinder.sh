@@ -5,6 +5,7 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem-per-cpu=300M
 #SBATCH --time=48:00:00
+#SBATCH --output=ref_%j.out
 
 start_time=$(date +%s)
 source /home/nlzoh.si/larbez1/miniconda3/etc/profile.d/conda.sh
@@ -22,7 +23,7 @@ for file in $INPUT/*fasta; do
 done
 wait
 
-temp_file=$OUTPUT/ref/temp.txt
+temp_file=$OUTPUT/ref/temp_refs.txt
 for file in $OUTPUT/ref/*/results.spa; do
   best_nz=$(awk -F'\t' '/^NZ_/ {if ($3 > max) {max=$3; line=$1}} END {print line}' "$file")
   echo "$best_nz" >> "$temp_file"
@@ -31,7 +32,7 @@ done
 most_common=$(sort "$temp_file" | uniq -c | sort -nr | head -n 1 | awk '{print $2}')
 id=${most_common#NZ_}
 if [ -z "$id" ]; then
-  echo "Referenca ni bila najdena. Preglej $OUTPUT/ref/temp.txt"
+  echo "Referenca ni bila najdena. Preglej $temp_file"
   find "$OUTPUT/ref/" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 else
   echo "Najpogostejsa referenca: $most_common"
